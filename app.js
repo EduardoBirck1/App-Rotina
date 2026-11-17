@@ -1,14 +1,18 @@
-const STORAGE_KEY = "prumo_app_state_v1";
+const STORAGE_KEY = "prumo_app_state_v3";
 
 const DEFAULT_EXAMPLE_STATE = {
   isExample: true,
+  streak: 1,
+  lastActiveDate: new Date().toISOString().slice(0, 10),
   settings: {
     name: "",
     waterGoal: 2500,
+    kcalGoal: 2000,
     theme: "dark"
   },
   water: 0,
   focusSessions: 0,
+  quickNotes: "",
   sleep: { bed: "", wake: "", mood: null },
   blocks: [
     { id: "b1", start: "06:30", end: "07:15", title: "Exercício e alongamento", category: "Saúde", done: false },
@@ -21,11 +25,12 @@ const DEFAULT_EXAMPLE_STATE = {
     { id: "b8", start: "22:30", end: "23:00", title: "Preparar para dormir", category: "Descanso", done: false }
   ],
   meals: [
-    { id: "m1", time: "07:30", name: "Pão integral, ovo mexido e fruta", type: "Café da manhã", kcal: 380, done: false, recipeId: "rec-1" },
-    { id: "m2", time: "12:15", name: "Arroz, feijão, frango grelhado e salada", type: "Almoço", kcal: 650, done: false, recipeId: "rec-2" },
-    { id: "m3", time: "16:00", name: "Iogurte natural com frutas e aveia", type: "Lanche da tarde", kcal: 210, done: false, recipeId: "rec-3" },
-    { id: "m4", time: "19:30", name: "Sopa de legumes com omelete leve", type: "Jantar", kcal: 450, done: false, recipeId: "rec-4" }
+    { id: "m1", time: "07:30", name: "Pão integral, ovo mexido e fruta", type: "Café da manhã", kcal: 380, protein: 22, carbs: 42, fat: 13, done: false, recipeId: "rec-1" },
+    { id: "m2", time: "12:15", name: "Arroz, feijão, frango grelhado e salada", type: "Almoço", kcal: 650, protein: 48, carbs: 68, fat: 16, done: false, recipeId: "rec-2" },
+    { id: "m3", time: "16:00", name: "Iogurte natural com frutas e aveia", type: "Lanche da tarde", kcal: 210, protein: 11, carbs: 28, fat: 6, done: false, recipeId: "rec-3" },
+    { id: "m4", time: "19:30", name: "Sopa de legumes com omelete leve", type: "Jantar", kcal: 450, protein: 28, carbs: 36, fat: 19, done: false, recipeId: "rec-4" }
   ],
+  customRecipes: [],
   shopping: [
     { id: "s1", name: "Ovos", done: false },
     { id: "s2", name: "Frutas da semana", done: false },
@@ -48,19 +53,48 @@ let state = loadState();
 let selectedDayIndex = 0;
 let taskFilter = "pendentes";
 let guideCategory = "todos";
+let recipeTagFilter = "todos";
 let timerInterval = null;
 let timerSeconds = 25 * 60;
 let timerTotalSeconds = 25 * 60;
 let timerRunning = false;
 let deferredInstallPrompt = null;
 
+// Guided Exercise Player state
+let activeGuide = null;
+let guideStepIndex = 0;
+let guideStepRemaining = 0;
+let guidePlayerInterval = null;
+
+function getAllRecipes() {
+  return [...DEFAULT_RECIPES_DB, ...(state.customRecipes || [])];
+}
+
+function playGentleChime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.25); // A5
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.6);
+  } catch (e) {}
+}
+
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {
-    console.error("Erro ao carregar dados:", e);
-  }
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return { ...JSON.parse(JSON.stringify(DEFAULT_EXAMPLE_STATE)), ...parsed };
+    }
+  } catch (e) {}
   return JSON.parse(JSON.stringify(DEFAULT_EXAMPLE_STATE));
 }
 
@@ -69,8 +103,8 @@ function saveState() {
   renderAll();
 }
 
-// Initialization
 document.addEventListener("DOMContentLoaded", () => {
+  updateStreak();
   applyTheme(state.settings.theme);
   setupNavigation();
   setupDateHeader();
@@ -78,6 +112,14 @@ document.addEventListener("DOMContentLoaded", () => {
   registerServiceWorker();
   renderAll();
 });
+
+function updateStreak() {
+  const today = new Date().toISOString().slice(0, 10);
+  if (state.lastActiveDate !== today) {
+    state.streak = (state.streak || 1) + 1;
+    state.lastActiveDate = today;
+  }
+}
 
 function registerServiceWorker() {
   if ("serviceWorker" in navigator) {
@@ -135,7 +177,6 @@ function switchView(viewName) {
 }
 
 function setupEventListeners() {
-  // Banner buttons
   document.getElementById("keepExampleBtn").addEventListener("click", () => {
     state.isExample = false;
     saveState();
@@ -152,14 +193,12 @@ function setupEventListeners() {
     saveState();
   });
 
-  // Theme toggle
   document.getElementById("themeToggle").addEventListener("click", () => {
     state.settings.theme = state.settings.theme === "dark" ? "light" : "dark";
     applyTheme(state.settings.theme);
     saveState();
   });
 
-  // Install PWA button
   document.getElementById("installBtn").addEventListener("click", async () => {
     if (deferredInstallPrompt) {
       deferredInstallPrompt.prompt();
@@ -169,11 +208,9 @@ function setupEventListeners() {
     }
   });
 
-  // Pomodoro Timer
   document.getElementById("timerStartBtn").addEventListener("click", toggleTimer);
   document.getElementById("timerResetBtn").addEventListener("click", () => setTimer(Math.round(timerTotalSeconds / 60)));
 
-  // Sleep inputs
   document.getElementById("sleepTime").addEventListener("change", (e) => {
     state.sleep.bed = e.target.value;
     saveState();
@@ -183,7 +220,11 @@ function setupEventListeners() {
     saveState();
   });
 
-  // Mood buttons
+  document.getElementById("quickNotesArea").addEventListener("input", (e) => {
+    state.quickNotes = e.target.value;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  });
+
   document.querySelectorAll(".mood-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       state.sleep.mood = Number(btn.dataset.mood);
@@ -191,11 +232,17 @@ function setupEventListeners() {
     });
   });
 
-  // Recipe search & filter
   document.getElementById("inlineRecipeSearch").addEventListener("input", renderRecipesCatalog);
   document.getElementById("recipeCategoryFilter").addEventListener("change", renderRecipesCatalog);
+  document.querySelectorAll("#recipeTagPills .pill-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#recipeTagPills .pill-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      recipeTagFilter = btn.dataset.tag;
+      renderRecipesCatalog();
+    });
+  });
 
-  // Guide category filter
   document.querySelectorAll("#guideCategoryPills .pill-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll("#guideCategoryPills .pill-btn").forEach((b) => b.classList.remove("active"));
@@ -205,7 +252,6 @@ function setupEventListeners() {
     });
   });
 
-  // Task filter
   document.querySelectorAll("#taskFilterPills .pill-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll("#taskFilterPills .pill-btn").forEach((b) => b.classList.remove("active"));
@@ -215,7 +261,6 @@ function setupEventListeners() {
     });
   });
 
-  // Water reminder notification
   document.getElementById("waterReminderBtn").addEventListener("click", () => {
     if ("Notification" in window) {
       Notification.requestPermission().then((perm) => {
@@ -237,9 +282,10 @@ function applyTheme(theme) {
   if (select) select.value = theme;
 }
 
-// Render Master
 function renderAll() {
   document.getElementById("exampleBanner").style.display = state.isExample ? "flex" : "none";
+  document.getElementById("streakBadge").textContent = `🔥 ${state.streak || 1} ${state.streak === 1 ? "dia" : "dias"}`;
+  document.getElementById("quickNotesArea").value = state.quickNotes || "";
   renderHeroStatus();
   renderWater();
   renderSleep();
@@ -265,6 +311,7 @@ function renderHeroStatus() {
   const habitsDone = state.habits.filter((h) => h.days[selectedDayIndex]).length;
   const habitsTotal = state.habits.length;
   const waterPct = Math.min(100, Math.round((state.water / state.settings.waterGoal) * 100));
+  const doneKcal = state.meals.filter((m) => m.done).reduce((acc, m) => acc + Number(m.kcal || 0), 0);
 
   const totalItems = blocksTotal + mealsTotal + habitsTotal + 1;
   const completedScore = blocksDone + mealsDone + habitsDone + waterPct / 100;
@@ -278,8 +325,8 @@ function renderHeroStatus() {
   document.getElementById("pillRefeicoes").textContent = `Refeições ${mealsDone}/${mealsTotal}`;
   document.getElementById("pillHabitos").textContent = `Hábitos ${habitsDone}/${habitsTotal}`;
   document.getElementById("pillAgua").textContent = `Água ${waterPct}%`;
+  document.getElementById("pillKcal").textContent = `${doneKcal} / ${state.settings.kcalGoal || 2000} kcal`;
 
-  // Current block detection
   const nextBlock = state.blocks.find((b) => !b.done) || state.blocks[0];
   if (nextBlock) {
     document.getElementById("currentBlockTitle").textContent = `Foco atual: ${nextBlock.title}`;
@@ -295,6 +342,7 @@ function renderHeroStatus() {
 // Water
 function addWater(amount) {
   state.water = Math.max(0, state.water + amount);
+  if (amount > 0 && state.water >= state.settings.waterGoal) playGentleChime();
   saveState();
 }
 
@@ -332,6 +380,7 @@ function toggleTimer() {
         timerRunning = false;
         state.focusSessions++;
         document.getElementById("timerStartBtn").textContent = "▶ Iniciar";
+        playGentleChime();
         alert("Sessão concluída! Excelente trabalho.");
         saveState();
       }
@@ -458,8 +507,18 @@ function renderMealsView() {
   const doneKcal = state.meals.filter((m) => m.done).reduce((acc, m) => acc + Number(m.kcal || 0), 0);
   const pct = totalKcal > 0 ? Math.min(100, Math.round((doneKcal / totalKcal) * 100)) : 0;
 
-  document.getElementById("mealsKcalProgressText").textContent = `${doneKcal} de ${totalKcal} kcal planejadas já consumidas`;
+  document.getElementById("mealsKcalProgressText").textContent = `${doneKcal} de ${totalKcal} kcal planejadas já consumidas (Meta: ${state.settings.kcalGoal || 2000} kcal)`;
   document.getElementById("mealsKcalBar").style.width = `${pct}%`;
+
+  const totalProt = state.meals.reduce((acc, m) => acc + Number(m.protein || 0), 0);
+  const totalCarb = state.meals.reduce((acc, m) => acc + Number(m.carbs || 0), 0);
+  const totalFat = state.meals.reduce((acc, m) => acc + Number(m.fat || 0), 0);
+
+  document.getElementById("macrosSummaryBar").innerHTML = `
+    <div class="macro-pill-box"><span class="muted">Proteínas</span><strong>${totalProt}g</strong></div>
+    <div class="macro-pill-box"><span class="muted">Carboidratos</span><strong>${totalCarb}g</strong></div>
+    <div class="macro-pill-box"><span class="muted">Gorduras</span><strong>${totalFat}g</strong></div>
+  `;
 
   const planList = document.getElementById("mealsPlanList");
   planList.innerHTML = state.meals
@@ -470,7 +529,7 @@ function renderMealsView() {
         <div class="checkbox-box ${m.done ? "checked" : ""}" onclick="toggleMeal('${m.id}')">${m.done ? "✓" : ""}</div>
         <div>
           <div class="item-title ${m.done ? "done" : ""}">${m.name}</div>
-          <div class="item-meta">${m.time} • ${m.type} • <strong>${m.kcal} kcal</strong></div>
+          <div class="item-meta">${m.time} • ${m.type} • <strong>${m.kcal} kcal</strong> (${m.protein || 0}g P / ${m.carbs || 0}g C / ${m.fat || 0}g G)</div>
         </div>
       </div>
       <div class="btn-row">
@@ -502,19 +561,25 @@ function renderRecipesCatalog() {
   const query = (document.getElementById("inlineRecipeSearch").value || "").toLowerCase().trim();
   const cat = document.getElementById("recipeCategoryFilter").value;
   const container = document.getElementById("inlineRecipeResults");
+  const all = getAllRecipes();
 
-  const filtered = RECIPES_DB.filter((r) => {
+  const filtered = all.filter((r) => {
     const matchesCat = cat === "todos" || r.category === cat;
+    const matchesTag = recipeTagFilter === "todos" || (r.tags && r.tags.includes(recipeTagFilter));
     const matchesText =
       !query ||
       r.name.toLowerCase().includes(query) ||
       r.description.toLowerCase().includes(query) ||
+      (r.tags && r.tags.some((t) => t.toLowerCase().includes(query))) ||
       r.ingredients.some((i) => i.toLowerCase().includes(query));
-    return matchesCat && matchesText;
+    return matchesCat && matchesTag && matchesText;
   });
 
+  const badge = document.getElementById("recipeCountBadge");
+  if (badge) badge.textContent = `${filtered.length} de ${all.length} pratos`;
+
   if (!filtered.length) {
-    container.innerHTML = `<p class="muted small">Nenhuma receita encontrada para "${query}".</p>`;
+    container.innerHTML = `<p class="muted small">Nenhuma receita encontrada com os filtros selecionados.</p>`;
     return;
   }
 
@@ -524,16 +589,17 @@ function renderRecipesCatalog() {
     <div class="recipe-card">
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-          <span class="muted small">${r.category} • ⏱ ${r.prepTime}</span>
+          <span class="muted small">${r.category} • ⏱ ${r.prepTime || "15 min"}</span>
           <span class="kcal-badge">${r.kcal} kcal</span>
         </div>
         <h4 style="font-size:0.95rem; margin-bottom:6px;">${r.name}</h4>
         <p class="muted small">${r.description}</p>
+        ${r.tags ? `<div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:8px;">${r.tags.map((t) => `<span class="stat-pill" style="font-size:0.68rem; padding:2px 7px;">${t}</span>`).join("")}</div>` : ""}
       </div>
       <div>
-        <div class="muted small" style="margin-bottom:8px;">Prot: ${r.protein} | Carb: ${r.carbs} | Gord: ${r.fat}</div>
+        <div class="muted small" style="margin-bottom:8px;">Prot: ${r.protein}g | Carb: ${r.carbs}g | Gord: ${r.fat}g</div>
         <div class="btn-row">
-          <button class="btn-outline-sm" onclick="openRecipeDetail('${r.id}')">Ver descrição e como fazer</button>
+          <button class="btn-outline-sm" onclick="openRecipeDetail('${r.id}')">Descrição e como fazer</button>
           <button class="btn-primary" style="padding:4px 10px; font-size:0.78rem;" onclick="addRecipeToToday('${r.id}')">+ Plano</button>
         </div>
       </div>
@@ -543,19 +609,50 @@ function renderRecipesCatalog() {
     .join("");
 }
 
+function suggestRandomMenu() {
+  if (!confirm("Deseja substituir o plano alimentar de hoje por uma combinação variada (Café, Almoço, Lanche e Jantar)?")) return;
+  const pick = (cat) => {
+    const list = getAllRecipes().filter((r) => r.category === cat);
+    return list[Math.floor(Math.random() * list.length)];
+  };
+  const cafe = pick("Café da manhã");
+  const almoco = pick("Almoço");
+  const lanche = pick("Lanche");
+  const jantar = pick("Jantar");
+  const chosen = [
+    { item: cafe, time: "07:30" },
+    { item: almoco, time: "12:15" },
+    { item: lanche, time: "16:00" },
+    { item: jantar, time: "19:30" }
+  ].filter((x) => x.item);
+
+  state.meals = chosen.map((c, idx) => ({
+    id: "m" + Date.now() + idx,
+    time: c.time,
+    name: c.item.name,
+    type: c.item.category,
+    kcal: c.item.kcal,
+    protein: c.item.protein,
+    carbs: c.item.carbs,
+    fat: c.item.fat,
+    done: false,
+    recipeId: c.item.id
+  }));
+  saveState();
+}
+
 function openRecipeDetail(recipeId) {
-  const r = RECIPES_DB.find((item) => item.id === recipeId);
+  const r = getAllRecipes().find((item) => item.id === recipeId);
   if (!r) return;
   document.getElementById("modalRecipeTitle").textContent = r.name;
   document.getElementById("modalRecipeBody").innerHTML = `
     <div class="pill-stats" style="margin-top:0; margin-bottom:12px;">
       <span class="kcal-badge">${r.kcal} kcal</span>
-      <span class="stat-pill">Proteína: ${r.protein}</span>
-      <span class="stat-pill">Carboidratos: ${r.carbs}</span>
-      <span class="stat-pill">Gorduras: ${r.fat}</span>
-      <span class="stat-pill">Tempo: ${r.prepTime}</span>
+      <span class="stat-pill">Proteína: ${r.protein}g</span>
+      <span class="stat-pill">Carboidratos: ${r.carbs}g</span>
+      <span class="stat-pill">Gorduras: ${r.fat}g</span>
     </div>
-    <p class="muted" style="font-size:0.9rem; margin-bottom:14px;">${r.description}</p>
+    <p class="muted" style="font-size:0.9rem; margin-bottom:6px;">${r.description}</p><p class="muted small" style="margin-bottom:14px;">📚 <em>Referência nutricional: ${r.source || "Tabela TACO / TBCA"}</em></p>
     <h4>Ingredientes</h4>
     <ul class="step-list">
       ${r.ingredients.map((i) => `<li>${i}</li>`).join("")}
@@ -565,21 +662,52 @@ function openRecipeDetail(recipeId) {
       ${r.steps.map((s) => `<li>${s}</li>`).join("")}
     </ol>
   `;
-  const addBtn = document.getElementById("addRecipeToDayBtn");
-  addBtn.onclick = () => {
+  document.getElementById("addRecipeToDayBtn").onclick = () => {
     addRecipeToToday(r.id);
     closeModal("recipeDetailModal");
+  };
+  document.getElementById("sendIngredientsToShopBtn").onclick = () => {
+    r.ingredients.forEach((ing) => {
+      state.shopping.push({ id: "s" + Date.now() + Math.random(), name: ing, done: false });
+    });
+    saveState();
+    alert(`${r.ingredients.length} ingredientes enviados para sua Lista de Compras!`);
   };
   document.getElementById("recipeDetailModal").classList.add("open");
 }
 
-function openRecipeSearchModal() {
-  switchView("refeicoes");
-  document.getElementById("inlineRecipeSearch").focus();
+function openNewRecipeCatalogModal() {
+  document.getElementById("newRecipeCatalogModal").classList.add("open");
+}
+
+function saveCustomRecipeToCatalog() {
+  const name = document.getElementById("newRecName").value.trim();
+  if (!name) return;
+  const ingredients = document.getElementById("newRecIng").value.split("\n").map((s) => s.trim()).filter(Boolean);
+  const steps = document.getElementById("newRecSteps").value.split("\n").map((s) => s.trim()).filter(Boolean);
+
+  state.customRecipes = state.customRecipes || [];
+  state.customRecipes.push({
+    id: "custom-" + Date.now(),
+    name,
+    category: document.getElementById("newRecCat").value,
+    kcal: Number(document.getElementById("newRecKcal").value) || 300,
+    protein: parseInt(document.getElementById("newRecProt").value) || 15,
+    carbs: parseInt(document.getElementById("newRecCarb").value) || 30,
+    fat: parseInt(document.getElementById("newRecFat").value) || 10,
+    prepTime: "15 min",
+    description: document.getElementById("newRecDesc").value.trim() || "Receita personalizada cadastrada por você.",
+    ingredients: ingredients.length ? ingredients : ["Ingredientes a gosto"],
+    steps: steps.length ? steps : ["Preparar conforme preferência."]
+  });
+
+  document.getElementById("newRecName").value = "";
+  closeModal("newRecipeCatalogModal");
+  saveState();
 }
 
 function addRecipeToToday(recipeId) {
-  const r = RECIPES_DB.find((item) => item.id === recipeId);
+  const r = getAllRecipes().find((item) => item.id === recipeId);
   if (!r) return;
   state.meals.push({
     id: "m" + Date.now(),
@@ -587,6 +715,9 @@ function addRecipeToToday(recipeId) {
     name: r.name,
     type: r.category,
     kcal: r.kcal,
+    protein: r.protein,
+    carbs: r.carbs,
+    fat: r.fat,
     done: false,
     recipeId: r.id
   });
@@ -594,7 +725,7 @@ function addRecipeToToday(recipeId) {
   alert(`"${r.name}" (${r.kcal} kcal) adicionado às refeições de hoje!`);
 }
 
-// Guides (Stretching, Posture, Breathing)
+// Guides & Interactive Step-by-Step Guided Player
 function renderGuides() {
   const grid = document.getElementById("guidesGrid");
   const filtered = GUIDES_DB.filter((g) => guideCategory === "todos" || g.category === guideCategory);
@@ -606,15 +737,15 @@ function renderGuides() {
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
           <span class="kcal-badge">${g.category}</span>
-          <span class="muted small">⏱ ${g.durationLabel}</span>
+          <span class="muted small">⏱ ${g.durationLabel} (${g.guidedSteps.length} etapas)</span>
         </div>
         <h3 style="margin-bottom:6px;">${g.title}</h3>
         <p class="guide-steps-preview">${g.summary}</p>
         <p class="muted small mt-2"><strong>Foco:</strong> ${g.target}</p>
       </div>
       <div class="btn-row">
-        <button class="btn-primary" onclick="openGuideDetail('${g.id}')">Ver passo a passo</button>
-        <button class="btn-outline" onclick="startGuideInPomodoro('${g.id}')">⏱ Timer (${g.durationLabel})</button>
+        <button class="btn-primary" onclick="openGuideDetail('${g.id}', true)">▶ Iniciar Sessão Guiada</button>
+        <button class="btn-outline" onclick="openGuideDetail('${g.id}', false)">Ver instruções</button>
       </div>
     </div>
   `
@@ -622,41 +753,111 @@ function renderGuides() {
     .join("");
 }
 
-function openGuideDetail(guideId) {
+function openGuideDetail(guideId, autoStart = false) {
   const g = GUIDES_DB.find((item) => item.id === guideId);
   if (!g) return;
+  activeGuide = g;
+  guideStepIndex = 0;
+  guideStepRemaining = g.guidedSteps[0].seconds;
+  clearInterval(guidePlayerInterval);
+
   document.getElementById("modalGuideTitle").textContent = g.title;
-  document.getElementById("modalGuideBody").innerHTML = `
-    <div class="pill-stats" style="margin-top:0; margin-bottom:12px;">
-      <span class="kcal-badge">${g.category}</span>
-      <span class="stat-pill">Duração sugerida: ${g.durationLabel}</span>
-      <span class="stat-pill">Região: ${g.target}</span>
-    </div>
-    <p class="muted" style="font-size:0.9rem; margin-bottom:12px;">${g.summary}</p>
-    <h4>Instruções de Execução Correta</h4>
-    <div class="step-list" style="padding-left:0; list-style:none; display:flex; flex-direction:column; gap:10px;">
-      ${g.steps.map((s) => `<div class="check-item" style="display:block;">${s}</div>`).join("")}
-    </div>
-    <div class="example-banner mt-2" style="margin-bottom:0;">
-      <span>💡 <strong>Dica de segurança:</strong> ${g.tips}</span>
-    </div>
-  `;
-  document.getElementById("startGuideTimerBtn").onclick = () => {
-    closeModal("guideDetailModal");
-    startGuideInPomodoro(g.id);
-  };
+  renderGuideModalContent(autoStart);
   document.getElementById("guideDetailModal").classList.add("open");
+
+  if (autoStart) startGuidedSequence();
 }
 
-function startGuideInPomodoro(guideId) {
-  const g = GUIDES_DB.find((item) => item.id === guideId);
-  if (!g) return;
-  setTimer(Math.ceil(g.durationSeconds / 60));
-  switchView("hoje");
-  toggleTimer();
+function renderGuideModalContent(isRunning = false) {
+  if (!activeGuide) return;
+  const currentStep = activeGuide.guidedSteps[guideStepIndex];
+
+  document.getElementById("modalGuideBody").innerHTML = `
+    <div class="guided-player-box">
+      <span class="kcal-badge">Etapa ${guideStepIndex + 1} de ${activeGuide.guidedSteps.length}</span>
+      <h4 style="margin:8px 0 4px; font-size:1.05rem;">${currentStep.title}</h4>
+      <div class="timer-display" id="guidedStepTimer" style="font-size:2rem; margin:6px 0;">${guideStepRemaining}s</div>
+      <p class="muted small" style="margin-bottom:12px;">${currentStep.desc}</p>
+      <div class="btn-row" style="justify-content:center;">
+        <button class="btn-outline-sm" onclick="prevGuideStep()">⏮ Anterior</button>
+        <button class="btn-primary" onclick="startGuidedSequence()">${isRunning ? "⏳ Em andamento..." : "▶ Iniciar Etapa"}</button>
+        <button class="btn-outline-sm" onclick="nextGuideStep()">Próxima ⏭</button>
+      </div>
+    </div>
+    <h4>Todas as Etapas do Guia</h4>
+    <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+      ${activeGuide.guidedSteps
+        .map(
+          (s, idx) => `
+        <div class="check-item" style="display:block; border-color:${idx === guideStepIndex ? "var(--accent)" : "var(--border)"};">
+          <div style="display:flex; justify-content:space-between;">
+            <strong>${s.title}</strong>
+            <span class="muted small">${s.seconds}s</span>
+          </div>
+          <p class="muted small mt-2">${s.desc}</p>
+        </div>
+      `
+        )
+        .join("")}
+    </div>
+    <div class="example-banner mt-2" style="margin-bottom:0;">
+      <span>💡 <strong>Dica:</strong> ${activeGuide.tips}</span>
+    </div>
+  `;
+
+  document.getElementById("startGuidedPlayerBtn").onclick = startGuidedSequence;
+}
+
+function startGuidedSequence() {
+  clearInterval(guidePlayerInterval);
+  renderGuideModalContent(true);
+  guidePlayerInterval = setInterval(() => {
+    if (guideStepRemaining > 1) {
+      guideStepRemaining--;
+      const el = document.getElementById("guidedStepTimer");
+      if (el) el.textContent = `${guideStepRemaining}s`;
+    } else {
+      playGentleChime();
+      if (guideStepIndex < activeGuide.guidedSteps.length - 1) {
+        guideStepIndex++;
+        guideStepRemaining = activeGuide.guidedSteps[guideStepIndex].seconds;
+        renderGuideModalContent(true);
+      } else {
+        clearInterval(guidePlayerInterval);
+        alert("Parabéns! Você concluiu toda a sequência guiada.");
+        closeModal("guideDetailModal");
+      }
+    }
+  }, 1000);
+}
+
+function nextGuideStep() {
+  if (!activeGuide) return;
+  clearInterval(guidePlayerInterval);
+  if (guideStepIndex < activeGuide.guidedSteps.length - 1) {
+    guideStepIndex++;
+    guideStepRemaining = activeGuide.guidedSteps[guideStepIndex].seconds;
+    renderGuideModalContent(false);
+  }
+}
+
+function prevGuideStep() {
+  if (!activeGuide) return;
+  clearInterval(guidePlayerInterval);
+  if (guideStepIndex > 0) {
+    guideStepIndex--;
+    guideStepRemaining = activeGuide.guidedSteps[guideStepIndex].seconds;
+    renderGuideModalContent(false);
+  }
 }
 
 // Agenda
+function applyRoutineTemplate() {
+  if (!confirm("Deseja preencher a agenda de hoje com uma rotina equilibrada de horários?")) return;
+  state.blocks = JSON.parse(JSON.stringify(DEFAULT_EXAMPLE_STATE.blocks));
+  saveState();
+}
+
 function renderWeekStrips() {
   const days = ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"];
   const now = new Date();
@@ -829,6 +1030,11 @@ function deleteShopping(id) {
   saveState();
 }
 
+function clearDoneShopping() {
+  state.shopping = state.shopping.filter((s) => !s.done);
+  saveState();
+}
+
 function deleteMeal(id) {
   state.meals = state.meals.filter((m) => m.id !== id);
   saveState();
@@ -864,7 +1070,10 @@ function renderWeeklyStats() {
 function openBlockModal() { document.getElementById("blockModal").classList.add("open"); }
 function openMealModal() { document.getElementById("mealModal").classList.add("open"); }
 function openHabitModal() { document.getElementById("habitModal").classList.add("open"); }
-function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+function closeModal(id) {
+  if (id === "guideDetailModal") clearInterval(guidePlayerInterval);
+  document.getElementById(id).classList.remove("open");
+}
 
 function saveNewBlock() {
   const title = document.getElementById("blockTitle").value.trim();
@@ -890,6 +1099,9 @@ function saveNewMeal() {
     name,
     time: document.getElementById("mealTime").value,
     kcal: Number(document.getElementById("mealKcal").value) || 0,
+    protein: Number(document.getElementById("mealProt").value) || 0,
+    carbs: Number(document.getElementById("mealCarb").value) || 0,
+    fat: Number(document.getElementById("mealFat").value) || 0,
     type: document.getElementById("mealType").value,
     done: false
   });
@@ -915,11 +1127,13 @@ function saveNewHabit() {
 function renderSettingsFields() {
   document.getElementById("userNameInput").value = state.settings.name || "";
   document.getElementById("waterGoalInput").value = state.settings.waterGoal || 2500;
+  document.getElementById("kcalGoalInput").value = state.settings.kcalGoal || 2000;
 }
 
 function saveSettings() {
   state.settings.name = document.getElementById("userNameInput").value.trim();
   state.settings.waterGoal = Number(document.getElementById("waterGoalInput").value) || 2500;
+  state.settings.kcalGoal = Number(document.getElementById("kcalGoalInput").value) || 2000;
   state.settings.theme = document.getElementById("themeSelect").value;
   applyTheme(state.settings.theme);
   setupDateHeader();
@@ -933,7 +1147,7 @@ function generateSyncCode() {
   box.value = encoded;
   box.select();
   navigator.clipboard?.writeText(encoded);
-  alert("Código de sincronização gerado e copiado! Cole este código no app do celular em Ajustes > Colar Código de Sync.");
+  alert("Código gerado e copiado! Cole no celular em Ajustes > Colar Código de Sync.");
 }
 
 function importSyncCode() {
@@ -945,7 +1159,7 @@ function importSyncCode() {
     saveState();
     alert("Dados sincronizados com sucesso!");
   } catch (e) {
-    alert("Código inválido. Verifique se copiou completamente.");
+    alert("Código inválido.");
   }
 }
 

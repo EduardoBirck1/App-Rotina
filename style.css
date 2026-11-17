@@ -77,6 +77,18 @@ body {
   font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.version-tag {
+  font-size: 0.68rem;
+  background: var(--accent-dim);
+  color: var(--accent);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-weight: 600;
 }
 
 .badge-pwa {
@@ -159,7 +171,17 @@ body {
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
+}
+
+.streak-badge {
+  background: rgba(229, 169, 60, 0.14);
+  color: #e5a93c;
+  border: 1px solid rgba(229, 169, 60, 0.35);
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 .save-indicator {
@@ -235,6 +257,12 @@ body {
   gap: 18px;
 }
 
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
 /* Hero Card */
 .hero-status-card {
   display: flex;
@@ -296,6 +324,25 @@ body {
   border-radius: 99px;
   font-size: 0.78rem;
   color: var(--text-muted);
+}
+
+/* Macros Bar */
+.macro-bar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.macro-pill-box {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
 }
 
 /* Water & Timer */
@@ -642,7 +689,7 @@ label {
   font-weight: 600;
 }
 
-/* Guides Grid */
+/* Guides Grid & Interactive Player */
 .guides-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -666,6 +713,15 @@ label {
   line-height: 1.5;
 }
 
+.guided-player-box {
+  background: var(--bg-input);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
+  text-align: center;
+}
+
 /* Modals */
 .modal-backdrop {
   position: fixed;
@@ -687,7 +743,7 @@ label {
   border: 1px solid var(--border);
   border-radius: 16px;
   width: 100%;
-  max-width: 540px;
+  max-width: 560px;
   max-height: 88vh;
   overflow-y: auto;
   padding: 22px;
@@ -794,7 +850,7 @@ label {
     width: 100%;
     height: 64px;
     flex-direction: row;
-    padding: 0 6px;
+    padding: 0 4px;
     border-right: none;
     border-top: 1px solid var(--border);
   }
@@ -808,14 +864,14 @@ label {
   .nav-item {
     flex-direction: column;
     gap: 3px;
-    padding: 6px 8px;
-    font-size: 0.68rem;
+    padding: 6px 4px;
+    font-size: 0.65rem;
   }
   .main-content {
     margin-left: 0;
     padding: 18px 16px 86px;
   }
-  .grid-2, .search-bar-wrap, .task-form-row {
+  .grid-2, .grid-3, .macro-bar-grid, .search-bar-wrap, .task-form-row {
     grid-template-columns: 1fr;
     flex-direction: column;
   }

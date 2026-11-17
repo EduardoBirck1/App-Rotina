@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Prumo" />
-  <title>Prumo — Rotina, Refeições e Guias</title>
+  <title>Prumo — Rotina, Nutrição e Guias</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
   <link rel="apple-touch-icon" href="icons/icon.svg" />
@@ -21,7 +21,7 @@
     <!-- Sidebar Desktop / Bottom Nav Mobile -->
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-logo">Prumo</div>
+        <div class="brand-logo">Prumo <span class="version-tag">v3</span></div>
         <span class="badge-pwa" id="installBtn" style="display:none;" title="Instalar App no Celular">📲 App</span>
       </div>
       <nav class="nav-menu" id="navMenu">
@@ -39,7 +39,7 @@
         </button>
         <button class="nav-item" data-view="guias">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>
-          <span>Guias &amp; Treino</span>
+          <span>Guias</span>
         </button>
         <button class="nav-item" data-view="habitos">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
@@ -68,7 +68,8 @@
           <p class="subtitle" id="pageSubtitle">Carregando data...</p>
         </div>
         <div class="topbar-actions">
-          <span class="save-indicator"><span class="dot"></span> Salvo no dispositivo</span>
+          <span class="streak-badge" id="streakBadge" title="Dias seguidos de constância">🔥 1 dia</span>
+          <span class="save-indicator"><span class="dot"></span> Salvo</span>
           <button class="icon-btn" id="themeToggle" title="Alternar tema">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           </button>
@@ -103,6 +104,7 @@
               <span class="stat-pill" id="pillRefeicoes">Refeições 0/4</span>
               <span class="stat-pill" id="pillHabitos">Hábitos 0/3</span>
               <span class="stat-pill" id="pillAgua">Água 0%</span>
+              <span class="stat-pill" id="pillKcal">0 kcal</span>
             </div>
           </div>
         </div>
@@ -130,7 +132,7 @@
           <!-- Foco / Pomodoro -->
           <div class="card">
             <div class="card-header">
-              <h3>Foco</h3>
+              <h3>Foco &amp; Timer</h3>
               <span class="muted" id="focusSessionsCount">0 sessões hoje</span>
             </div>
             <div class="timer-display" id="timerDisplay">25:00</div>
@@ -171,13 +173,17 @@
             <div class="mood-labels"><span>Ruim</span><span>Ótimo</span></div>
           </div>
 
-          <!-- Hábitos de hoje -->
+          <!-- Hábitos + Notas Rápidas -->
           <div class="card">
             <div class="card-header">
               <h3>Hábitos de hoje</h3>
               <button class="btn-ghost-sm" onclick="switchView('guias')">Ver guias →</button>
             </div>
             <div class="habit-pills" id="todayHabitsList"></div>
+            <div class="mt-2">
+              <label>Notas rápidas do dia (rascunho mental)</label>
+              <textarea id="quickNotesArea" rows="2" placeholder="Anote ideias, lembretes rápidos ou reflexões do dia..."></textarea>
+            </div>
           </div>
         </div>
 
@@ -186,7 +192,7 @@
           <div class="card">
             <div class="card-header">
               <h3>Refeições de hoje</h3>
-              <span class="muted small" id="todayKcalSummary">0 / 1660 kcal</span>
+              <span class="muted small" id="todayKcalSummary">0 / 1690 kcal</span>
             </div>
             <div class="checklist" id="todayMealsList"></div>
           </div>
@@ -212,7 +218,10 @@
               <div class="timeline-bar" id="timelineVisualBar"></div>
               <div class="legend-row" id="timelineLegend"></div>
             </div>
-            <button class="btn-primary" onclick="openBlockModal()">+ Novo bloco</button>
+            <div class="btn-row">
+              <button class="btn-outline" onclick="applyRoutineTemplate()">⚡ Aplicar Modelo Equilibrado</button>
+              <button class="btn-primary" onclick="openBlockModal()">+ Novo bloco</button>
+            </div>
           </div>
         </div>
         <div class="card">
@@ -228,23 +237,29 @@
           <div class="card-header">
             <div>
               <h3 id="mealsDayTitle">Refeições de Hoje</h3>
-              <p class="muted small" id="mealsKcalProgressText">0 de 1660 kcal planejadas já consumidas</p>
+              <p class="muted small" id="mealsKcalProgressText">0 de 1690 kcal planejadas já consumidas</p>
             </div>
             <div class="btn-row">
-              <button class="btn-outline" onclick="openRecipeSearchModal()">🔍 Pesquisar Refeições &amp; Receitas</button>
-              <button class="btn-primary" onclick="openMealModal()">+ Nova refeição</button>
+              <button class="btn-outline" onclick="openNewRecipeCatalogModal()">📖 Criar Receita no Catálogo</button>
+              <button class="btn-primary" onclick="openMealModal()">+ Adicionar ao Dia</button>
             </div>
           </div>
           <div class="progress-bar"><div class="progress-fill" id="mealsKcalBar" style="width: 0%"></div></div>
+          <!-- Resumo de Macronutrientes -->
+          <div class="macro-bar-grid" id="macrosSummaryBar"></div>
         </div>
 
-        <!-- Barra Rápida de Pesquisa de Refeições na Própria Aba -->
+        <!-- Catálogo & Pesquisa de Refeições -->
         <div class="card">
           <div class="card-header">
-            <h3>Catálogo &amp; Pesquisa de Refeições (Kcal + Modo de Preparo)</h3>
+            <div>
+              <h3>Catálogo Nutricional &amp; Pesquisa de Refeições <span class="kcal-badge" id="recipeCountBadge">24 pratos</span></h3>
+              <p class="muted small">Valores nutricionais baseados na Tabela TACO/TBCA e Guia Alimentar, com modo de preparo passo a passo.</p>
+            </div>
+            <button class="btn-outline-sm" onclick="suggestRandomMenu()">🎲 Sugerir Cardápio do Dia</button>
           </div>
           <div class="search-bar-wrap">
-            <input type="text" id="inlineRecipeSearch" placeholder="Buscar prato, ingrediente ou objetivo (ex: frango, omelete, café, pré-treino, low carb)..." />
+            <input type="text" id="inlineRecipeSearch" placeholder="Buscar prato ou ingrediente (ex: frango, cuscuz, atum, aveia, abobrinha, tapioca)..." />
             <select id="recipeCategoryFilter">
               <option value="todos">Todas as categorias</option>
               <option value="Café da manhã">Café da manhã</option>
@@ -252,6 +267,15 @@
               <option value="Lanche">Lanche</option>
               <option value="Jantar">Jantar</option>
             </select>
+          </div>
+          <div class="filter-pills" id="recipeTagPills" style="margin-bottom:14px;">
+            <button class="pill-btn active" data-tag="todos">Todos</button>
+            <button class="pill-btn" data-tag="Alta Proteína">Alta Proteína</button>
+            <button class="pill-btn" data-tag="Low Carb">Low Carb</button>
+            <button class="pill-btn" data-tag="Rápido">Rápido (≤10 min)</button>
+            <button class="pill-btn" data-tag="Vegetariano">Vegetariano</button>
+            <button class="pill-btn" data-tag="Pré-Treino">Pré-Treino</button>
+            <button class="pill-btn" data-tag="Sem Glúten">Sem Glúten</button>
           </div>
           <div class="recipe-cards-grid" id="inlineRecipeResults"></div>
         </div>
@@ -262,7 +286,10 @@
             <div class="checklist" id="mealsPlanList"></div>
           </div>
           <div class="card">
-            <h3>Lista de compras</h3>
+            <div class="card-header">
+              <h3>Lista de compras</h3>
+              <button class="btn-ghost-sm" onclick="clearDoneShopping()">Limpar marcados</button>
+            </div>
             <div class="input-group">
               <input type="text" id="newShoppingItem" placeholder="Adicionar item" />
               <button class="btn-primary" onclick="addShoppingItem()">+ Adicionar</button>
@@ -277,13 +304,14 @@
         <div class="card">
           <div class="card-header">
             <div>
-              <h3>Guias Práticos de Execução</h3>
-              <p class="muted small">Passo a passo ilustrado e cronometrado para alongamentos, postura e mobilidade.</p>
+              <h3>Guias Práticos de Execução &amp; Player Guiado</h3>
+              <p class="muted small">Passo a passo detalhado com cronômetro inteligente por etapa para alongamentos, postura e mobilidade.</p>
             </div>
             <div class="filter-pills" id="guideCategoryPills">
               <button class="pill-btn active" data-cat="todos">Todos</button>
               <button class="pill-btn" data-cat="Alongamento">Alongamento</button>
               <button class="pill-btn" data-cat="Postura">Postura &amp; Trabalho</button>
+              <button class="pill-btn" data-cat="Mobilidade">Mobilidade &amp; Core</button>
               <button class="pill-btn" data-cat="Respiração">Respiração &amp; Sono</button>
             </div>
           </div>
@@ -344,8 +372,16 @@
             <h3>Perfil e metas</h3>
             <label>Como devo chamar você?</label>
             <input type="text" id="userNameInput" placeholder="Seu nome" />
-            <label class="mt-2">Meta de água por dia (ml)</label>
-            <input type="number" id="waterGoalInput" value="2500" />
+            <div class="grid-2 mt-2">
+              <div>
+                <label>Meta de água/dia (ml)</label>
+                <input type="number" id="waterGoalInput" value="2500" />
+              </div>
+              <div>
+                <label>Meta de calorias/dia (kcal)</label>
+                <input type="number" id="kcalGoalInput" value="2000" />
+              </div>
+            </div>
             <label class="mt-2">Tema</label>
             <select id="themeSelect">
               <option value="dark">Escuro</option>
@@ -356,11 +392,11 @@
 
           <div class="card">
             <h3>Integração App de Celular (PWA + Sync)</h3>
-            <p class="muted small">Este sistema funciona nativamente como aplicativo no Android e iPhone sem precisar de loja:</p>
+            <p class="muted small">Instale no Android ou iPhone diretamente pelo navegador:</p>
             <ul class="mobile-steps">
-              <li><strong>Android (Chrome):</strong> Abra o link do GitHub Pages, toque nos 3 pontinhos e selecione <em>"Adicionar à tela inicial"</em> ou <em>"Instalar aplicativo"</em>.</li>
-              <li><strong>iPhone (Safari):</strong> Toque no ícone de <em>Compartilhar</em> (quadrado com seta) e escolha <em>"Adicionar à Tela de Início"</em>.</li>
-              <li><strong>Sincronização entre PC e Celular:</strong> Use o código de transferência rápida abaixo ou exporte seu backup JSON.</li>
+              <li><strong>Android (Chrome):</strong> Toque nos 3 pontinhos e selecione <em>"Adicionar à tela inicial"</em> ou <em>"Instalar aplicativo"</em>.</li>
+              <li><strong>iPhone (Safari):</strong> Toque em <em>Compartilhar</em> (quadrado com seta) e escolha <em>"Adicionar à Tela de Início"</em>.</li>
+              <li><strong>Sincronização entre PC e Celular:</strong> Gere o código abaixo para transferir toda sua rotina, receitas e progresso.</li>
             </ul>
             <div class="btn-row mt-2">
               <button class="btn-primary" onclick="generateSyncCode()">📲 Gerar Código de Sync</button>
@@ -372,7 +408,7 @@
 
         <div class="card">
           <h3>Seus dados e Backup</h3>
-          <p class="muted small">Tudo é salvo localmente no navegador e no aplicativo instalado. Faça backup ou restaure quando quiser.</p>
+          <p class="muted small">Tudo é salvo localmente no navegador e no aplicativo instalado.</p>
           <div class="btn-row mt-2">
             <button class="btn-outline" onclick="exportBackup()">⬇ Exportar backup (.json)</button>
             <label class="btn-outline file-label">
@@ -386,7 +422,7 @@
     </main>
   </div>
 
-  <!-- MODAL: DETALHES DA RECEITA (KCAL + COMO FAZER) -->
+  <!-- MODAL: DETALHES DA RECEITA (KCAL + COMO FAZER + MANDAR INGREDIENTES P/ COMPRAS) -->
   <div class="modal-backdrop" id="recipeDetailModal">
     <div class="modal">
       <div class="modal-header">
@@ -395,13 +431,66 @@
       </div>
       <div class="modal-body" id="modalRecipeBody"></div>
       <div class="modal-footer">
-        <button class="btn-outline" onclick="closeModal('recipeDetailModal')">Fechar</button>
-        <button class="btn-primary" id="addRecipeToDayBtn">+ Adicionar ao Plano de Hoje</button>
+        <button class="btn-outline" id="sendIngredientsToShopBtn">🛒 Enviar Ingredientes p/ Compras</button>
+        <button class="btn-primary" id="addRecipeToDayBtn">+ Adicionar ao Dia</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: GUIA INTERATIVO DE ALONGAMENTO / EXERCÍCIO -->
+  <!-- MODAL: CRIAR NOVA RECEITA PERSONALIZADA NO CATÁLOGO -->
+  <div class="modal-backdrop" id="newRecipeCatalogModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Cadastrar Nova Receita no Catálogo</h3>
+        <button class="icon-btn" onclick="closeModal('newRecipeCatalogModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <label>Nome do prato</label>
+        <input type="text" id="newRecName" placeholder="Ex: Tapioca com queijo coalho e chia" />
+        <div class="grid-2 mt-2">
+          <div>
+            <label>Categoria</label>
+            <select id="newRecCat">
+              <option value="Café da manhã">Café da manhã</option>
+              <option value="Almoço">Almoço</option>
+              <option value="Lanche">Lanche</option>
+              <option value="Jantar">Jantar</option>
+            </select>
+          </div>
+          <div>
+            <label>Calorias (kcal)</label>
+            <input type="number" id="newRecKcal" value="320" />
+          </div>
+        </div>
+        <div class="grid-3 mt-2">
+          <div>
+            <label>Proteína (g)</label>
+            <input type="text" id="newRecProt" value="18g" />
+          </div>
+          <div>
+            <label>Carboidrato (g)</label>
+            <input type="text" id="newRecCarb" value="35g" />
+          </div>
+          <div>
+            <label>Gordura (g)</label>
+            <input type="text" id="newRecFat" value="11g" />
+          </div>
+        </div>
+        <label class="mt-2">Descrição curta</label>
+        <input type="text" id="newRecDesc" placeholder="Benefícios e resumo nutricional..." />
+        <label class="mt-2">Ingredientes (1 por linha)</label>
+        <textarea id="newRecIng" rows="3" placeholder="2 colheres de goma de tapioca&#10;50g de queijo coalho&#10;1 colher de chá de chia"></textarea>
+        <label class="mt-2">Modo de preparo / Como fazer (1 passo por linha)</label>
+        <textarea id="newRecSteps" rows="3" placeholder="Aqueça a frigideira&#10;Espalhe a goma peneirada&#10;Recheie e dobre ao meio"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-outline" onclick="closeModal('newRecipeCatalogModal')">Cancelar</button>
+        <button class="btn-primary" onclick="saveCustomRecipeToCatalog()">Salvar no Catálogo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: GUIA INTERATIVO COM PLAYER PASSO A PASSO CRONOMETRADO -->
   <div class="modal-backdrop" id="guideDetailModal">
     <div class="modal">
       <div class="modal-header">
@@ -411,7 +500,7 @@
       <div class="modal-body" id="modalGuideBody"></div>
       <div class="modal-footer">
         <button class="btn-outline" onclick="closeModal('guideDetailModal')">Fechar</button>
-        <button class="btn-primary" id="startGuideTimerBtn">⏱ Iniciar Timer Guiado</button>
+        <button class="btn-primary" id="startGuidedPlayerBtn">▶ Iniciar Sessão Guiada</button>
       </div>
     </div>
   </div>
@@ -452,11 +541,11 @@
     </div>
   </div>
 
-  <!-- MODAL: NOVA REFEIÇÃO -->
+  <!-- MODAL: NOVA REFEIÇÃO RÁPIDA NO DIA -->
   <div class="modal-backdrop" id="mealModal">
     <div class="modal">
       <div class="modal-header">
-        <h3>Adicionar Refeição</h3>
+        <h3>Adicionar Refeição ao Dia</h3>
         <button class="icon-btn" onclick="closeModal('mealModal')">✕</button>
       </div>
       <div class="modal-body">
@@ -472,6 +561,20 @@
             <input type="number" id="mealKcal" value="450" />
           </div>
         </div>
+        <div class="grid-3 mt-2">
+          <div>
+            <label>Proteína (g)</label>
+            <input type="number" id="mealProt" value="25" />
+          </div>
+          <div>
+            <label>Carboidrato (g)</label>
+            <input type="number" id="mealCarb" value="30" />
+          </div>
+          <div>
+            <label>Gordura (g)</label>
+            <input type="number" id="mealFat" value="15" />
+          </div>
+        </div>
         <label class="mt-2">Refeição</label>
         <select id="mealType">
           <option value="Café da manhã">Café da manhã</option>
@@ -479,8 +582,6 @@
           <option value="Lanche da tarde">Lanche da tarde</option>
           <option value="Jantar">Jantar</option>
         </select>
-        <label class="mt-2">Modo de preparo / Notas (opcional)</label>
-        <textarea id="mealNotes" rows="3" placeholder="Ingredientes e como fazer..."></textarea>
       </div>
       <div class="modal-footer">
         <button class="btn-outline" onclick="closeModal('mealModal')">Cancelar</button>
