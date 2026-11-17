@@ -1,0 +1,18 @@
+{
+  "name": "Prumo — Rotina, Refeições e Guias",
+  "short_name": "Prumo",
+  "description": "Gerenciador pessoal de rotina, blocos de horário, refeições com calorias, receitas e guias de alongamento.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0d1110",
+  "theme_color": "#0d1110",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

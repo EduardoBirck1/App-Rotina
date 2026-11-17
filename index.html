@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0d1110" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Prumo" />
+  <title>Prumo — Rotina, Refeições e Guias</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Sidebar Desktop / Bottom Nav Mobile -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">Prumo</div>
+        <span class="badge-pwa" id="installBtn" style="display:none;" title="Instalar App no Celular">📲 App</span>
+      </div>
+      <nav class="nav-menu" id="navMenu">
+        <button class="nav-item active" data-view="hoje">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          <span>Hoje</span>
+        </button>
+        <button class="nav-item" data-view="agenda">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span>Agenda</span>
+        </button>
+        <button class="nav-item" data-view="refeicoes">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
+          <span>Refeições</span>
+        </button>
+        <button class="nav-item" data-view="guias">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>
+          <span>Guias &amp; Treino</span>
+        </button>
+        <button class="nav-item" data-view="habitos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <span>Hábitos</span>
+        </button>
+        <button class="nav-item" data-view="tarefas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          <span>Tarefas</span>
+        </button>
+        <button class="nav-item" data-view="semana">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <span>Semana</span>
+        </button>
+        <button class="nav-item" data-view="ajustes">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span>Ajustes</span>
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="main-content">
+      <header class="topbar">
+        <div>
+          <h1 id="pageTitle">Hoje</h1>
+          <p class="subtitle" id="pageSubtitle">Carregando data...</p>
+        </div>
+        <div class="topbar-actions">
+          <span class="save-indicator"><span class="dot"></span> Salvo no dispositivo</span>
+          <button class="icon-btn" id="themeToggle" title="Alternar tema">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Banner de exemplo -->
+      <div class="example-banner" id="exampleBanner">
+        <span>Esta é uma rotina de exemplo. Edite os itens ou comece do zero.</span>
+        <div class="banner-btns">
+          <button class="btn-outline" id="keepExampleBtn">Manter exemplo</button>
+          <button class="btn-primary" id="startZeroBtn">Começar do zero</button>
+        </div>
+      </div>
+
+      <!-- VIEW: HOJE -->
+      <section class="view active" id="view-hoje">
+        <div class="card hero-status-card">
+          <div class="progress-ring-wrap">
+            <svg class="progress-ring" width="96" height="96">
+              <circle class="progress-ring-bg" stroke-width="8" fill="transparent" r="40" cx="48" cy="48"/>
+              <circle class="progress-ring-fill" id="dailyRing" stroke-width="8" fill="transparent" r="40" cx="48" cy="48" stroke-dasharray="251.2" stroke-dashoffset="251.2"/>
+            </svg>
+            <span class="progress-text" id="dailyPercent">0%</span>
+          </div>
+          <div class="hero-info">
+            <span class="greeting-label" id="greetingLabel">BOA NOITE</span>
+            <h2 id="currentBlockTitle">Agora: Lazer livre</h2>
+            <p class="muted" id="currentBlockSub">20:00 às 21:30. A seguir: Preparar para dormir às 22:30.</p>
+            <div class="pill-stats">
+              <span class="stat-pill" id="pillBlocos">Blocos 0/8</span>
+              <span class="stat-pill" id="pillRefeicoes">Refeições 0/4</span>
+              <span class="stat-pill" id="pillHabitos">Hábitos 0/3</span>
+              <span class="stat-pill" id="pillAgua">Água 0%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <!-- Água -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Água</h3>
+              <button class="btn-ghost-sm" id="waterReminderBtn">🔔 Lembrete</button>
+            </div>
+            <div class="water-display">
+              <span class="big-num" id="waterCurrent">0</span>
+              <span class="muted">de <span id="waterGoalDisplay">2500</span> ml</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="waterBar" style="width: 0%"></div></div>
+            <div class="btn-row">
+              <button class="btn-outline" onclick="addWater(200)">💧 200 ml</button>
+              <button class="btn-outline" onclick="addWater(300)">300 ml</button>
+              <button class="btn-outline" onclick="addWater(500)">500 ml</button>
+              <button class="btn-outline muted" onclick="addWater(-200)">-200</button>
+            </div>
+          </div>
+
+          <!-- Foco / Pomodoro -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Foco</h3>
+              <span class="muted" id="focusSessionsCount">0 sessões hoje</span>
+            </div>
+            <div class="timer-display" id="timerDisplay">25:00</div>
+            <div class="progress-bar"><div class="progress-fill" id="timerBar" style="width: 100%"></div></div>
+            <div class="btn-row">
+              <button class="btn-primary" id="timerStartBtn">▶ Iniciar</button>
+              <button class="btn-outline" id="timerResetBtn" title="Reiniciar">↻</button>
+              <button class="btn-outline" onclick="setTimer(25)">25 min</button>
+              <button class="btn-outline" onclick="setTimer(50)">50 min</button>
+              <button class="btn-outline" onclick="setTimer(5)">Pausa 5</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <!-- Sono e Humor -->
+          <div class="card">
+            <h3>Sono e humor</h3>
+            <div class="sleep-inputs">
+              <div>
+                <label>Dormi às</label>
+                <input type="time" id="sleepTime" />
+              </div>
+              <div>
+                <label>Acordei às</label>
+                <input type="time" id="wakeTime" />
+              </div>
+            </div>
+            <p class="muted small" id="sleepSummary">Registre o horário para ver as horas de sono.</p>
+            <label class="mt-2">HUMOR DE HOJE</label>
+            <div class="mood-selector" id="moodSelector">
+              <button class="mood-btn" data-mood="1">1</button>
+              <button class="mood-btn" data-mood="2">2</button>
+              <button class="mood-btn" data-mood="3">3</button>
+              <button class="mood-btn" data-mood="4">4</button>
+              <button class="mood-btn" data-mood="5">5</button>
+            </div>
+            <div class="mood-labels"><span>Ruim</span><span>Ótimo</span></div>
+          </div>
+
+          <!-- Hábitos de hoje -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Hábitos de hoje</h3>
+              <button class="btn-ghost-sm" onclick="switchView('guias')">Ver guias →</button>
+            </div>
+            <div class="habit-pills" id="todayHabitsList"></div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <!-- Refeições de hoje -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Refeições de hoje</h3>
+              <span class="muted small" id="todayKcalSummary">0 / 1660 kcal</span>
+            </div>
+            <div class="checklist" id="todayMealsList"></div>
+          </div>
+
+          <!-- Tarefas pendentes -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Tarefas pendentes</h3>
+              <button class="btn-outline-sm" onclick="switchView('tarefas')">Ver todas</button>
+            </div>
+            <div class="checklist" id="todayTasksList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: AGENDA -->
+      <section class="view" id="view-agenda">
+        <div class="week-strip" id="agendaWeekStrip"></div>
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3 id="agendaDayTitle">Segunda-feira, 16 de novembro</h3>
+              <div class="timeline-bar" id="timelineVisualBar"></div>
+              <div class="legend-row" id="timelineLegend"></div>
+            </div>
+            <button class="btn-primary" onclick="openBlockModal()">+ Novo bloco</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="schedule-list" id="scheduleList"></div>
+        </div>
+      </section>
+
+      <!-- VIEW: REFEIÇÕES & BUSCA NUTRICIONAL -->
+      <section class="view" id="view-refeicoes">
+        <div class="week-strip" id="mealsWeekStrip"></div>
+        
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3 id="mealsDayTitle">Refeições de Hoje</h3>
+              <p class="muted small" id="mealsKcalProgressText">0 de 1660 kcal planejadas já consumidas</p>
+            </div>
+            <div class="btn-row">
+              <button class="btn-outline" onclick="openRecipeSearchModal()">🔍 Pesquisar Refeições &amp; Receitas</button>
+              <button class="btn-primary" onclick="openMealModal()">+ Nova refeição</button>
+            </div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="mealsKcalBar" style="width: 0%"></div></div>
+        </div>
+
+        <!-- Barra Rápida de Pesquisa de Refeições na Própria Aba -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Catálogo &amp; Pesquisa de Refeições (Kcal + Modo de Preparo)</h3>
+          </div>
+          <div class="search-bar-wrap">
+            <input type="text" id="inlineRecipeSearch" placeholder="Buscar prato, ingrediente ou objetivo (ex: frango, omelete, café, pré-treino, low carb)..." />
+            <select id="recipeCategoryFilter">
+              <option value="todos">Todas as categorias</option>
+              <option value="Café da manhã">Café da manhã</option>
+              <option value="Almoço">Almoço</option>
+              <option value="Lanche">Lanche</option>
+              <option value="Jantar">Jantar</option>
+            </select>
+          </div>
+          <div class="recipe-cards-grid" id="inlineRecipeResults"></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Plano alimentar do dia</h3>
+            <div class="checklist" id="mealsPlanList"></div>
+          </div>
+          <div class="card">
+            <h3>Lista de compras</h3>
+            <div class="input-group">
+              <input type="text" id="newShoppingItem" placeholder="Adicionar item" />
+              <button class="btn-primary" onclick="addShoppingItem()">+ Adicionar</button>
+            </div>
+            <div class="checklist mt-2" id="shoppingList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: GUIAS & INSTRUÇÕES (ALONGAMENTO, POSTURA, TREINO) -->
+      <section class="view" id="view-guias">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3>Guias Práticos de Execução</h3>
+              <p class="muted small">Passo a passo ilustrado e cronometrado para alongamentos, postura e mobilidade.</p>
+            </div>
+            <div class="filter-pills" id="guideCategoryPills">
+              <button class="pill-btn active" data-cat="todos">Todos</button>
+              <button class="pill-btn" data-cat="Alongamento">Alongamento</button>
+              <button class="pill-btn" data-cat="Postura">Postura &amp; Trabalho</button>
+              <button class="pill-btn" data-cat="Respiração">Respiração &amp; Sono</button>
+            </div>
+          </div>
+        </div>
+        <div class="guides-grid" id="guidesGrid"></div>
+      </section>
+
+      <!-- VIEW: HÁBITOS -->
+      <section class="view" id="view-habitos">
+        <div class="card">
+          <div class="card-header">
+            <h3>Hábitos da semana</h3>
+            <button class="btn-primary" onclick="openHabitModal()">+ Novo hábito</button>
+          </div>
+          <div class="habits-matrix" id="habitsMatrix"></div>
+        </div>
+      </section>
+
+      <!-- VIEW: TAREFAS -->
+      <section class="view" id="view-tarefas">
+        <div class="card">
+          <div class="task-form-row">
+            <input type="text" id="newTaskInput" placeholder="Nova tarefa" />
+            <select id="newTaskPriority">
+              <option value="Alta">Alta</option>
+              <option value="Média" selected>Média</option>
+              <option value="Baixa">Baixa</option>
+            </select>
+            <input type="date" id="newTaskDate" />
+            <button class="btn-primary" onclick="addTask()">+ Adicionar</button>
+          </div>
+          <div class="filter-pills mt-2" id="taskFilterPills">
+            <button class="pill-btn active" data-filter="pendentes">Pendentes</button>
+            <button class="pill-btn" data-filter="concluidas">Concluídas</button>
+            <button class="pill-btn" data-filter="todas">Todas</button>
+          </div>
+          <div class="checklist mt-2" id="fullTasksList"></div>
+        </div>
+      </section>
+
+      <!-- VIEW: SEMANA -->
+      <section class="view" id="view-semana">
+        <div class="card">
+          <h3>Progresso dos últimos 7 dias</h3>
+          <div class="chart-container" id="weeklyChart"></div>
+          <p class="muted small mt-2">Cada barra combina blocos, refeições, hábitos e água do dia.</p>
+        </div>
+        <div class="card">
+          <h3>Resumo da semana</h3>
+          <div class="summary-grid" id="weeklySummaryGrid"></div>
+        </div>
+      </section>
+
+      <!-- VIEW: AJUSTES & INTEGRAÇÃO MOBILE -->
+      <section class="view" id="view-ajustes">
+        <div class="grid-2">
+          <div class="card">
+            <h3>Perfil e metas</h3>
+            <label>Como devo chamar você?</label>
+            <input type="text" id="userNameInput" placeholder="Seu nome" />
+            <label class="mt-2">Meta de água por dia (ml)</label>
+            <input type="number" id="waterGoalInput" value="2500" />
+            <label class="mt-2">Tema</label>
+            <select id="themeSelect">
+              <option value="dark">Escuro</option>
+              <option value="light">Claro</option>
+            </select>
+            <button class="btn-primary mt-2" onclick="saveSettings()">Salvar preferências</button>
+          </div>
+
+          <div class="card">
+            <h3>Integração App de Celular (PWA + Sync)</h3>
+            <p class="muted small">Este sistema funciona nativamente como aplicativo no Android e iPhone sem precisar de loja:</p>
+            <ul class="mobile-steps">
+              <li><strong>Android (Chrome):</strong> Abra o link do GitHub Pages, toque nos 3 pontinhos e selecione <em>"Adicionar à tela inicial"</em> ou <em>"Instalar aplicativo"</em>.</li>
+              <li><strong>iPhone (Safari):</strong> Toque no ícone de <em>Compartilhar</em> (quadrado com seta) e escolha <em>"Adicionar à Tela de Início"</em>.</li>
+              <li><strong>Sincronização entre PC e Celular:</strong> Use o código de transferência rápida abaixo ou exporte seu backup JSON.</li>
+            </ul>
+            <div class="btn-row mt-2">
+              <button class="btn-primary" onclick="generateSyncCode()">📲 Gerar Código de Sync</button>
+              <button class="btn-outline" onclick="importSyncCode()">📥 Colar Código de Sync</button>
+            </div>
+            <textarea id="syncCodeBox" class="sync-box mt-2" rows="2" placeholder="O código de sincronização aparecerá aqui..." readonly></textarea>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Seus dados e Backup</h3>
+          <p class="muted small">Tudo é salvo localmente no navegador e no aplicativo instalado. Faça backup ou restaure quando quiser.</p>
+          <div class="btn-row mt-2">
+            <button class="btn-outline" onclick="exportBackup()">⬇ Exportar backup (.json)</button>
+            <label class="btn-outline file-label">
+              ⬆ Importar backup
+              <input type="file" id="importBackupFile" accept=".json" hidden onchange="importBackup(event)" />
+            </label>
+            <button class="btn-danger" onclick="resetAllData()">Apagar tudo</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL: DETALHES DA RECEITA (KCAL + COMO FAZER) -->
+  <div class="modal-backdrop" id="recipeDetailModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalRecipeTitle">Nome da Refeição</h3>
+        <button class="icon-btn" onclick="closeModal('recipeDetailModal')">✕</button>
+      </div>
+      <div class="modal-body" id="modalRecipeBody"></div>
+      <div class="modal-footer">
+        <button class="btn-outline" onclick="closeModal('recipeDetailModal')">Fechar</button>
+        <button class="btn-primary" id="addRecipeToDayBtn">+ Adicionar ao Plano de Hoje</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: GUIA INTERATIVO DE ALONGAMENTO / EXERCÍCIO -->
+  <div class="modal-backdrop" id="guideDetailModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalGuideTitle">Guia de Execução</h3>
+        <button class="icon-btn" onclick="closeModal('guideDetailModal')">✕</button>
+      </div>
+      <div class="modal-body" id="modalGuideBody"></div>
+      <div class="modal-footer">
+        <button class="btn-outline" onclick="closeModal('guideDetailModal')">Fechar</button>
+        <button class="btn-primary" id="startGuideTimerBtn">⏱ Iniciar Timer Guiado</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NOVO BLOCO DE AGENDA -->
+  <div class="modal-backdrop" id="blockModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Novo Bloco de Horário</h3>
+        <button class="icon-btn" onclick="closeModal('blockModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <label>Título da atividade</label>
+        <input type="text" id="blockTitle" placeholder="Ex: Alongamento e mobilidade" />
+        <div class="grid-2 mt-2">
+          <div>
+            <label>Início</label>
+            <input type="time" id="blockStart" value="07:00" />
+          </div>
+          <div>
+            <label>Fim</label>
+            <input type="time" id="blockEnd" value="07:30" />
+          </div>
+        </div>
+        <label class="mt-2">Categoria</label>
+        <select id="blockCategory">
+          <option value="Saúde">Saúde</option>
+          <option value="Estudo e trabalho">Estudo e trabalho</option>
+          <option value="Casa">Casa</option>
+          <option value="Lazer">Lazer</option>
+          <option value="Descanso">Descanso</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-outline" onclick="closeModal('blockModal')">Cancelar</button>
+        <button class="btn-primary" onclick="saveNewBlock()">Salvar Bloco</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NOVA REFEIÇÃO -->
+  <div class="modal-backdrop" id="mealModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Adicionar Refeição</h3>
+        <button class="icon-btn" onclick="closeModal('mealModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <label>Nome do prato</label>
+        <input type="text" id="mealName" placeholder="Ex: Omelete de 3 ovos com aveia" />
+        <div class="grid-2 mt-2">
+          <div>
+            <label>Horário</label>
+            <input type="time" id="mealTime" value="12:30" />
+          </div>
+          <div>
+            <label>Calorias (kcal)</label>
+            <input type="number" id="mealKcal" value="450" />
+          </div>
+        </div>
+        <label class="mt-2">Refeição</label>
+        <select id="mealType">
+          <option value="Café da manhã">Café da manhã</option>
+          <option value="Almoço">Almoço</option>
+          <option value="Lanche da tarde">Lanche da tarde</option>
+          <option value="Jantar">Jantar</option>
+        </select>
+        <label class="mt-2">Modo de preparo / Notas (opcional)</label>
+        <textarea id="mealNotes" rows="3" placeholder="Ingredientes e como fazer..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-outline" onclick="closeModal('mealModal')">Cancelar</button>
+        <button class="btn-primary" onclick="saveNewMeal()">Adicionar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NOVO HÁBITO -->
+  <div class="modal-backdrop" id="habitModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Novo Hábito</h3>
+        <button class="icon-btn" onclick="closeModal('habitModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <label>Nome do hábito</label>
+        <input type="text" id="habitName" placeholder="Ex: Alongar 10 minutos" />
+      </div>
+      <div class="modal-footer">
+        <button class="btn-outline" onclick="closeModal('habitModal')">Cancelar</button>
+        <button class="btn-primary" onclick="saveNewHabit()">Salvar Hábito</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
